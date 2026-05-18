@@ -239,6 +239,25 @@
     .word-count { margin-top: 1rem; font-size: 0.78rem; color: #aaa; text-align: right; }
     .word-count span { font-weight: 600; color: #555; }
 
+    .targeting-box {
+      margin-top: 1.25rem;
+      padding: 1rem 1.1rem;
+      background: #f5f4f0;
+      border-radius: 8px;
+      border-left: 3px solid #1a1a1a;
+    }
+
+    .targeting-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #888;
+      margin-bottom: 0.4rem;
+    }
+
+    .targeting-text { font-size: 0.875rem; line-height: 1.6; color: #444; }
+
     .error-msg { display: none; background: #fff5f5; border: 1px solid #fecaca; border-radius: 8px; padding: 0.875rem 1rem; color: #b91c1c; font-size: 0.875rem; margin-top: 1rem; }
     .error-msg.visible { display: block; }
 
@@ -472,7 +491,11 @@
           </div>
         </div>
         <div class="cover-letter-text" id="cover-letter-text"></div>
-        <div class="word-count">Words: <span id="word-count">0</span> / 350</div>
+        <div class="word-count">Words: <span id="word-count">0</span> / 300</div>
+        <div class="targeting-box" id="targeting-box" style="display:none">
+          <div class="targeting-label">Why this letter works</div>
+          <div class="targeting-text" id="targeting-text"></div>
+        </div>
       </div>
     </div>
 
@@ -627,6 +650,16 @@
 
         coverLetterText.textContent = data.cover_letter;
         wordCountEl.textContent = data.word_count;
+
+        const targetingBox = document.getElementById("targeting-box");
+        const targetingText = document.getElementById("targeting-text");
+        if (data.targeting) {
+          targetingText.textContent = data.targeting;
+          targetingBox.style.display = "block";
+        } else {
+          targetingBox.style.display = "none";
+        }
+
         resultCard.classList.add("visible");
         resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
 
