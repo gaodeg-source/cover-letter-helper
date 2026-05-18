@@ -1006,9 +1006,9 @@
       const interviews = c.interview_1 + c.interview_2 + c.interview_3 + c.offer;
       const stats = [
         { label: "Total",      value: apps.length,  color: "#1a1a1a" },
-        { label: "Interviews", value: interviews,    color: "#15803d" },
-        { label: "Offers",     value: c.offer,       color: "#7e22ce" },
-        { label: "Rejected",   value: c.rejected,    color: "#b91c1c" },
+        { label: "Interviews", value: interviews,    color: "#1a1a1a" },
+        { label: "Offers",     value: c.offer,       color: "#1a1a1a" },
+        { label: "Rejected",   value: c.rejected,    color: "#1a1a1a" },
       ];
       document.getElementById("stats-row").innerHTML = stats.map(s =>
         `<div class="stat-card">
