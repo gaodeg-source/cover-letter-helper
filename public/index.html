@@ -440,10 +440,77 @@
       margin-left: 0.5rem;
     }
 
+    /* ── Stats row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .stat-card {
+      background: #fff;
+      border: 1px solid #e2e2e2;
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: #aaa;
+      margin-top: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+    }
+
+    /* ── View toggle ── */
+    .apps-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .view-toggle {
+      display: flex;
+      background: #e8e8e4;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .view-btn {
+      padding: 0.35rem 1rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: transparent;
+      color: #666;
+      transition: all 0.15s;
+    }
+
+    .view-btn.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    /* ── Chart container ── */
+    #sankey-wrap { width: 100%; overflow: visible; }
+    #sankey-wrap svg { display: block; overflow: visible; }
+
     @media (max-width: 560px) {
       .row { grid-template-columns: 1fr; }
       .app-item-top { flex-direction: column; }
       .app-right { flex-direction: row; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -558,15 +625,34 @@
 
     <!-- ── APPLICATIONS PAGE ── -->
     <div class="page" id="page-applications">
-      <div class="card">
-        <div class="apps-header">
-          <h2>Applications</h2>
-          <button class="btn-sm" id="clear-all-btn" style="display:none; color:#b91c1c; border-color:#fecaca;">Clear all</button>
+      <div class="stats-row" id="stats-row"></div>
+
+      <div class="apps-toolbar">
+        <div class="view-toggle">
+          <button class="view-btn active" data-view="list">List</button>
+          <button class="view-btn" data-view="chart">Chart</button>
         </div>
-        <div id="app-list-empty" class="empty-state">
-          No applications yet. Generate a cover letter to start tracking.
+        <button class="btn-sm" id="clear-all-btn" style="display:none; color:#b91c1c; border-color:#fecaca;">Clear all</button>
+      </div>
+
+      <!-- List view -->
+      <div id="view-list">
+        <div class="card">
+          <div id="app-list-empty" class="empty-state">
+            No applications yet. Generate a cover letter to start tracking.
+          </div>
+          <div class="app-list" id="app-list"></div>
         </div>
-        <div class="app-list" id="app-list"></div>
+      </div>
+
+      <!-- Chart view -->
+      <div id="view-chart" style="display:none">
+        <div class="card">
+          <div id="sankey-empty" class="empty-state" style="display:none">
+            Add applications to see the chart.
+          </div>
+          <div id="sankey-wrap"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -585,6 +671,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
   <script>
     // ── Storage helpers ──
     const APPS_KEY = "cla_applications";
@@ -618,13 +706,31 @@
     resumeTextarea.addEventListener("blur", () => saveResume(resumeTextarea.value));
 
     // ── Nav tabs ──
+    let currentView = "list";
+
     document.querySelectorAll(".nav-tab").forEach(tab => {
       tab.addEventListener("click", () => {
         document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
         document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
         tab.classList.add("active");
         document.getElementById(`page-${tab.dataset.page}`).classList.add("active");
-        if (tab.dataset.page === "applications") renderApps();
+        if (tab.dataset.page === "applications") {
+          renderStats();
+          renderApps();
+          if (currentView === "chart") renderSankey();
+        }
+      });
+    });
+
+    // ── View toggle ──
+    document.querySelectorAll(".view-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".view-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentView = btn.dataset.view;
+        document.getElementById("view-list").style.display = currentView === "list" ? "block" : "none";
+        document.getElementById("view-chart").style.display = currentView === "chart" ? "block" : "none";
+        if (currentView === "chart") renderSankey();
       });
     });
 
@@ -792,6 +898,7 @@
       apps.unshift(app);
       saveApps(apps);
       updateTabCount(apps.length);
+      renderStats();
     }
 
     function updateTabCount(n) {
@@ -891,6 +998,143 @@
       });
     });
 
+    // ── Stats ──
+    function renderStats() {
+      const apps = loadApps();
+      const c = { applied: 0, interview_1: 0, interview_2: 0, interview_3: 0, offer: 0, rejected: 0, withdrawn: 0 };
+      apps.forEach(a => { if (a.status in c) c[a.status]++; });
+      const interviews = c.interview_1 + c.interview_2 + c.interview_3 + c.offer;
+      const stats = [
+        { label: "Total",      value: apps.length,  color: "#1a1a1a" },
+        { label: "Interviews", value: interviews,    color: "#15803d" },
+        { label: "Offers",     value: c.offer,       color: "#7e22ce" },
+        { label: "Rejected",   value: c.rejected,    color: "#b91c1c" },
+      ];
+      document.getElementById("stats-row").innerHTML = stats.map(s =>
+        `<div class="stat-card">
+          <div class="stat-value" style="color:${s.color}">${s.value}</div>
+          <div class="stat-label">${s.label}</div>
+        </div>`
+      ).join("");
+    }
+
+    // ── Sankey ──
+    const NODE_COLORS = {
+      "Applications": "#94a3b8",
+      "Pending":      "#93c5fd",
+      "Interviewing": "#34d399",
+      "Rejected":     "#f87171",
+      "Withdrawn":    "#d1d5db",
+      "Offer":        "#a78bfa",
+      "Still Active": "#6ee7b7",
+    };
+
+    function buildSankeyData(apps) {
+      const c = { applied: 0, interview_1: 0, interview_2: 0, interview_3: 0, offer: 0, rejected: 0, withdrawn: 0 };
+      apps.forEach(a => { if (a.status in c) c[a.status]++; });
+      const interviewing = c.interview_1 + c.interview_2 + c.interview_3 + c.offer;
+      const active = c.interview_1 + c.interview_2 + c.interview_3;
+
+      const rawLinks = [
+        { source: "Applications", target: "Pending",      value: c.applied,    color: NODE_COLORS["Pending"] },
+        { source: "Applications", target: "Interviewing",  value: interviewing, color: NODE_COLORS["Interviewing"] },
+        { source: "Applications", target: "Rejected",      value: c.rejected,   color: NODE_COLORS["Rejected"] },
+        { source: "Applications", target: "Withdrawn",     value: c.withdrawn,  color: NODE_COLORS["Withdrawn"] },
+        { source: "Interviewing",  target: "Offer",        value: c.offer,      color: NODE_COLORS["Offer"] },
+        { source: "Interviewing",  target: "Still Active", value: active,       color: NODE_COLORS["Still Active"] },
+      ].filter(l => l.value > 0);
+
+      const order = ["Applications", "Pending", "Interviewing", "Rejected", "Withdrawn", "Offer", "Still Active"];
+      const used = new Set(rawLinks.flatMap(l => [l.source, l.target]));
+      const nodeNames = order.filter(n => used.has(n));
+      const idx = Object.fromEntries(nodeNames.map((n, i) => [n, i]));
+
+      return {
+        nodes: nodeNames.map(name => ({ name })),
+        links: rawLinks.map(l => ({ source: idx[l.source], target: idx[l.target], value: l.value, color: l.color })),
+      };
+    }
+
+    function renderSankey() {
+      const wrap = document.getElementById("sankey-wrap");
+      const emptyEl = document.getElementById("sankey-empty");
+      wrap.innerHTML = "";
+
+      const apps = loadApps();
+      if (apps.length === 0) { emptyEl.style.display = "block"; return; }
+      emptyEl.style.display = "none";
+
+      const { nodes, links } = buildSankeyData(apps);
+      if (links.length === 0) return;
+
+      const W = 680, H = Math.max(300, nodes.length * 70);
+      const margin = { top: 24, right: 150, bottom: 24, left: 150 };
+
+      const svg = d3.select("#sankey-wrap")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("viewBox", `0 0 ${W} ${H}`)
+        .attr("preserveAspectRatio", "xMidYMid meet")
+        .style("overflow", "visible");
+
+      const sankeyGen = d3.sankey()
+        .nodeWidth(18)
+        .nodePadding(16)
+        .extent([[margin.left, margin.top], [W - margin.right, H - margin.bottom]]);
+
+      const { nodes: sNodes, links: sLinks } = sankeyGen({
+        nodes: nodes.map(d => ({ ...d })),
+        links: links.map(d => ({ ...d })),
+      });
+
+      // Links
+      svg.append("g")
+        .selectAll("path")
+        .data(sLinks)
+        .join("path")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("fill", "none")
+        .attr("stroke", d => d.color)
+        .attr("stroke-width", d => Math.max(2, d.width))
+        .attr("stroke-opacity", 0.4);
+
+      // Node rectangles
+      svg.append("g")
+        .selectAll("rect")
+        .data(sNodes)
+        .join("rect")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => Math.max(4, d.y1 - d.y0))
+        .attr("fill", d => NODE_COLORS[d.name] || "#94a3b8")
+        .attr("rx", 3);
+
+      // Labels: count (bold) above, name (small) below midpoint
+      const labelG = svg.append("g").attr("font-family", "system-ui, -apple-system, sans-serif");
+
+      sNodes.forEach(d => {
+        const mid = (d.y0 + d.y1) / 2;
+        const isLeft = d.x0 < W / 2;
+        const x = isLeft ? d.x0 - 10 : d.x1 + 10;
+        const anchor = isLeft ? "end" : "start";
+
+        labelG.append("text")
+          .attr("x", x).attr("y", mid - 7)
+          .attr("text-anchor", anchor)
+          .attr("font-size", 16).attr("font-weight", 700)
+          .attr("fill", "#1a1a1a")
+          .text(d.value);
+
+        labelG.append("text")
+          .attr("x", x).attr("y", mid + 11)
+          .attr("text-anchor", anchor)
+          .attr("font-size", 11)
+          .attr("fill", "#888")
+          .text(d.name);
+      });
+    }
+
     // ── Utils ──
     function escHtml(str) {
       return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -903,6 +1147,7 @@
 
     // Init
     updateTabCount(loadApps().length);
+    renderStats();
   </script>
 </body>
 </html>
