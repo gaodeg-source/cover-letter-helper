@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const Anthropic = require("@anthropic-ai/sdk");
-const pdf = require("pdf-parse");
 const path = require("path");
 
 const app = express();
@@ -19,6 +18,8 @@ app.post("/generate", upload.single("resume_pdf"), async (req, res) => {
     let resumeContent = resume_text?.trim() || "";
 
     if (req.file) {
+      // pdf-parse has a known init bug in serverless — import from the lib path directly
+      const pdf = require("pdf-parse/lib/pdf-parse");
       const pdfData = await pdf(req.file.buffer);
       resumeContent = pdfData.text.trim();
     }
@@ -84,5 +85,10 @@ Write a tailored cover letter for this position.`;
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Cover letter agent running at http://localhost:${PORT}`));
+// Local dev only — Vercel handles listening itself
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`Cover letter agent running at http://localhost:${PORT}`));
+}
+
+module.exports = app;
