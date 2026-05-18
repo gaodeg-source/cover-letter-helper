@@ -239,6 +239,56 @@
     .word-count { margin-top: 1rem; font-size: 0.78rem; color: #aaa; text-align: right; }
     .word-count span { font-weight: 600; color: #555; }
 
+    .save-prompt {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 1.25rem;
+      padding: 0.875rem 1.1rem;
+      background: #f5f4f0;
+      border-radius: 8px;
+      border: 1px solid #e2e2e2;
+      flex-wrap: wrap;
+    }
+
+    .save-prompt-text { font-size: 0.875rem; color: #444; font-weight: 500; }
+
+    .save-prompt-actions { display: flex; gap: 0.5rem; }
+
+    .btn-save-yes {
+      padding: 0.4rem 1rem;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-save-yes:hover { background: #333; }
+
+    .btn-save-yes.saved {
+      background: #15803d;
+      cursor: default;
+    }
+
+    .btn-save-no {
+      padding: 0.4rem 0.875rem;
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-save-no:hover { background: #e8e8e4; color: #333; }
+
     .targeting-box {
       margin-top: 1.25rem;
       padding: 1rem 1.1rem;
@@ -496,6 +546,13 @@
           <div class="targeting-label">Why this letter works</div>
           <div class="targeting-text" id="targeting-text"></div>
         </div>
+        <div class="save-prompt" id="save-prompt" style="display:none">
+          <span class="save-prompt-text">Save this application to your tracker?</span>
+          <div class="save-prompt-actions">
+            <button class="btn-save-yes" id="save-yes-btn">Add to applications</button>
+            <button class="btn-save-no" id="save-no-btn">Dismiss</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -628,6 +685,7 @@
     async function generate() {
       errorMsg.classList.remove("visible");
       resultCard.classList.remove("visible");
+      document.getElementById("save-prompt").style.display = "none";
       loading.classList.add("visible");
       generateBtn.disabled = true;
 
@@ -663,13 +721,18 @@
         resultCard.classList.add("visible");
         resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
 
-        // Save to applications tracker
+        // Show save prompt — don't auto-add
         const company = fd.get("company")?.trim();
         const role = fd.get("role")?.trim();
 
         if (company && role) {
           lastGenerated = { company, role, coverLetter: data.cover_letter };
-          addApplication(company, role, data.cover_letter);
+          const savePrompt = document.getElementById("save-prompt");
+          const saveYes = document.getElementById("save-yes-btn");
+          savePrompt.style.display = "flex";
+          saveYes.textContent = "Add to applications";
+          saveYes.classList.remove("saved");
+          saveYes.disabled = false;
         }
       } catch (err) {
         errorMsg.textContent = err.message;
@@ -689,6 +752,20 @@
         copyBtn.classList.add("copied");
         setTimeout(() => { copyBtn.textContent = "Copy"; copyBtn.classList.remove("copied"); }, 2000);
       });
+    });
+
+    document.getElementById("save-yes-btn").addEventListener("click", () => {
+      if (!lastGenerated) return;
+      addApplication(lastGenerated.company, lastGenerated.role, lastGenerated.coverLetter);
+      const saveYes = document.getElementById("save-yes-btn");
+      saveYes.textContent = "Added";
+      saveYes.classList.add("saved");
+      saveYes.disabled = true;
+      document.getElementById("save-no-btn").style.display = "none";
+    });
+
+    document.getElementById("save-no-btn").addEventListener("click", () => {
+      document.getElementById("save-prompt").style.display = "none";
     });
 
     // ── Application tracker ──
