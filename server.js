@@ -62,7 +62,7 @@ WRITING RULES:
 - No subject line or email header. Start with "Dear Hiring Manager," or a role-specific salutation.
 - End with a short, direct closing — one sentence.
 
-OUTPUT FORMAT — respond with valid JSON only, no markdown fences:
+OUTPUT FORMAT — respond with raw valid JSON only. No markdown, no code fences, no explanation outside the JSON object:
 {
   "cover_letter": "the full cover letter text",
   "targeting": "2–3 sentences explaining which job requirements you targeted and which resume experiences you chose, and why"
@@ -86,11 +86,11 @@ Role: ${role.trim()}`;
 
     let coverLetter, targeting;
     try {
-      const parsed = JSON.parse(message.content[0].text);
+      const raw = message.content[0].text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      const parsed = JSON.parse(raw);
       coverLetter = parsed.cover_letter?.trim();
       targeting = parsed.targeting?.trim();
     } catch {
-      // Fallback if model doesn't return clean JSON
       coverLetter = message.content[0].text.trim();
       targeting = null;
     }
