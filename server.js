@@ -39,33 +39,39 @@ app.post("/generate", upload.single("resume_pdf"), async (req, res) => {
 STEP 1 — Research the company and role:
 Using the company name and job description, identify:
 - What the product does, who the customers are, and the specific problem it solves
-- The operational workflow this role sits inside (e.g. loan processing, patient intake, sales pipeline) and where AI is being applied within it
-- The domain's constraints: is it high-stakes, compliance-heavy, latency-sensitive, or messy-data-driven? What breaks when AI gets it wrong?
-- The specific AI primitives the company works with (agents, RAG, fine-tuning, evals, vector DBs, orchestration) — note which ones appear in the JD
-- The exact tech stack mentioned in the JD (frameworks, languages, cloud providers, tools)
-- Company stage and culture signals (early startup, growth, enterprise, regulated industry) and the appropriate tone: direct and blunt for startups, formal for regulated industries, technical for dev tools. Do not default to a generic professional tone.
+- The operational workflow this role sits inside and where the candidate's work would actually fit
+- The domain's constraints: is it high-stakes, compliance-heavy, latency-sensitive, messy-data-driven, or safety-critical? What breaks when things go wrong?
+- The specific AI primitives mentioned (agents, RAG, fine-tuning, evals, vector DBs, orchestration) and the exact tech stack (frameworks, languages, tools, cloud)
+- Company stage and culture, and the appropriate tone — direct and blunt for startups, formal for regulated industries, technical for engineering roles. Do not default to generic professional.
 
-STEP 2 — Extract the top 5 requirements from the job description.
+STEP 2 — Fit check before writing:
+Honestly assess the resume against the role on three dimensions:
+- Technical skills: which required tools, languages, or methods does the resume actually support? List what matches and what is missing.
+- Domain/industry: does the candidate have relevant domain experience, or are they coming from a different field?
+- Experience level: does the candidate meet the stated requirements (years of experience, degree type, specific certifications)?
+
+If there are hard gaps — required skills completely absent, wrong degree field, missing years of experience — note them. Do not paper over them. The letter should be honest about what the candidate can and cannot offer.
 
 STEP 3 — Select and map experiences:
-Choose only the 2–3 experiences from the resume that best match both the requirements and the company's product context.
-- For each selected experience, identify which of the candidate's tools or frameworks map closest to the company's stated stack. Surface those explicitly — do not list every tool the candidate knows.
-- If the resume includes non-engineering experiences (sales, operations, brand-building), compress each to one sentence focused only on the most transferable angle. Do not give them equal weight to technical work.
+Choose only the 2–3 experiences from the resume that genuinely connect to this role.
+- The connection must be direct — one logical step, not two. "Built AI tutoring workflows" connects to "build AI features for customer workflows." "Sold consumer products" does not connect to "opto-electronic manufacturing" or "CAD prototyping."
+- For each selected experience, surface only the tools or methods that map to the company's stated stack. Do not list everything the candidate knows.
+- Non-engineering experiences (sales, operations, brand-building) get at most one sentence, focused on the single most transferable angle only.
 
-STEP 4 — Write a cover letter under 300 words organized around 2–3 fit themes, not a project-by-project list.
+STEP 4 — Write a cover letter under 320 words, organized around 2–3 fit themes.
 
-STEP 5 — Revise: cut any sentence that could apply to any applicant at any company. If a claim has no concrete evidence from the resume, remove it or replace it with one that does.
+STEP 5 — Revise: cut any sentence that could apply to any applicant at any company. Remove or replace any claim without concrete evidence.
 
 WRITING RULES:
-- Write in the tone you chose in Step 1.
-- Connect experiences to the company's specific product context and customer workflow — not just the job requirements.
-- When the role involves AI agents, orchestration, or multi-step pipelines, explicitly address that — do not reduce it to "LLM integration."
-- When the domain is high-stakes (finance, healthcare, legal, operations), acknowledge reliability, edge cases, or what happens when the system fails. Do not only talk about shipping features.
+- Write in the tone chosen in Step 1.
+- Connect experiences to the company's specific product context and customer workflow, not just the job requirements list.
+- When the role involves AI agents, orchestration, or multi-step pipelines, address it directly — do not reduce it to "LLM integration."
+- When the domain is high-stakes (finance, healthcare, legal, manufacturing), address reliability, edge cases, or failure modes — not just feature shipping.
 - For every major claim, include one concrete detail: project name, action taken, tool used, measurable result, or stakeholder context.
-- Mirror the company's stack where the resume genuinely supports it. Do not claim fluency in tools not present in the resume.
-- Use confident but not presumptuous language. Do not tell the company how their own product works.
+- Mirror the company's stack only where the resume genuinely supports it. Do not claim or imply fluency in tools not present in the resume. If there is a partial match (e.g. candidate knows Python, role primarily uses Java), state what the candidate has and acknowledge the difference.
+- Use confident but not presumptuous language. Do not tell the company how their own product or process works.
 - Use concrete language: building, deploying, debugging, iterating with users, handling messy data, translating user needs into working features.
-- Never write: "I am passionate about X", "I am excited about Y", "perfect fit", "AI-native", "end-to-end", "cross-functional", "stakeholder alignment", "operating in ambiguity", "rapid prototyping".
+- Never write: "I am passionate about X", "excited to apply", "perfect fit", "AI-native", "end-to-end", "cross-functional", "stakeholder alignment", "operating in ambiguity", "rapid prototyping", "thrive in fast-paced environments."
 - Mention the company and role by name. Do not flatter them.
 - No subject line or email header. Start with "Dear Hiring Manager," or a role-specific salutation.
 - End with one short, direct closing sentence.
@@ -73,7 +79,7 @@ WRITING RULES:
 OUTPUT FORMAT — respond with raw valid JSON only. No markdown, no code fences, no explanation outside the JSON object:
 {
   "cover_letter": "the full cover letter text",
-  "targeting": "3 sentences: (1) tone chosen and why, (2) which requirements and product context you targeted, (3) which resume experiences you selected and how you mapped their stack"
+  "targeting": "3 sentences: (1) tone chosen and why, (2) fit assessment — what genuinely matches and any significant gaps, (3) which experiences were selected and how their stack maps to the role"
 }`;
 
     const userPrompt = `Resume:
