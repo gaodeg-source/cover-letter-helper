@@ -311,6 +311,33 @@
     .error-msg { display: none; background: #fff5f5; border: 1px solid #fecaca; border-radius: 8px; padding: 0.875rem 1rem; color: #b91c1c; font-size: 0.875rem; margin-top: 1rem; }
     .error-msg.visible { display: block; }
 
+    .fit-warning {
+      display: none;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-left: 4px solid #f59e0b;
+      border-radius: 8px;
+      padding: 0.875rem 1rem;
+      margin-top: 1.25rem;
+    }
+
+    .fit-warning.visible { display: flex; gap: 0.75rem; align-items: flex-start; }
+
+    .fit-warning-icon { font-size: 1.1rem; flex-shrink: 0; line-height: 1.4; }
+
+    .fit-warning-body { flex: 1; }
+
+    .fit-warning-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #92400e;
+      margin-bottom: 0.3rem;
+    }
+
+    .fit-warning-text { font-size: 0.875rem; color: #78350f; line-height: 1.55; }
+
     /* ── Applications tracker ── */
     .apps-header {
       display: flex;
@@ -660,6 +687,14 @@
       </div>
 
       <div class="error-msg" id="error-msg"></div>
+
+      <div class="fit-warning" id="fit-warning">
+        <div class="fit-warning-icon">⚠️</div>
+        <div class="fit-warning-body">
+          <div class="fit-warning-title">Fit gap detected</div>
+          <div class="fit-warning-text" id="fit-warning-text"></div>
+        </div>
+      </div>
 
       <div class="result-card" id="result-card">
         <div class="result-header">
@@ -1032,6 +1067,7 @@
     async function generate() {
       errorMsg.classList.remove("visible");
       resultCard.classList.remove("visible");
+      document.getElementById("fit-warning").classList.remove("visible");
       document.getElementById("save-prompt").style.display = "none";
       loading.classList.add("visible");
       generateBtn.disabled = true;
@@ -1055,6 +1091,15 @@
 
         coverLetterText.textContent = data.cover_letter;
         wordCountEl.textContent = data.word_count;
+
+        const fitWarningEl = document.getElementById("fit-warning");
+        const fitWarningText = document.getElementById("fit-warning-text");
+        if (data.fit_warning) {
+          fitWarningText.textContent = data.fit_warning;
+          fitWarningEl.classList.add("visible");
+        } else {
+          fitWarningEl.classList.remove("visible");
+        }
 
         const targetingBox = document.getElementById("targeting-box");
         const targetingText = document.getElementById("targeting-text");

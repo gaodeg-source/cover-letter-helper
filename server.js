@@ -79,6 +79,7 @@ WRITING RULES:
 OUTPUT FORMAT — respond with raw valid JSON only. No markdown, no code fences, no explanation outside the JSON object:
 {
   "cover_letter": "the full cover letter text",
+  "fit_warning": "If there are significant gaps — required skills completely absent, wrong degree field, insufficient years of experience, or domain experience that does not transfer — write 1–2 direct sentences naming the specific gaps. Be concrete: name the missing skill or requirement, not a vague disclaimer. If the fit is genuinely strong with no hard gaps, set this to null.",
   "targeting": "3 sentences: (1) tone chosen and why, (2) fit assessment — what genuinely matches and any significant gaps, (3) which experiences were selected and how their stack maps to the role"
 }`;
 
@@ -98,20 +99,22 @@ Role: ${role.trim()}`;
       messages: [{ role: "user", content: userPrompt }],
     });
 
-    let coverLetter, targeting;
+    let coverLetter, fitWarning, targeting;
     try {
       const raw = message.content[0].text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
       const parsed = JSON.parse(raw);
       coverLetter = parsed.cover_letter?.trim();
+      fitWarning = parsed.fit_warning && parsed.fit_warning !== "null" ? parsed.fit_warning.trim() : null;
       targeting = parsed.targeting?.trim();
     } catch {
       coverLetter = message.content[0].text.trim();
+      fitWarning = null;
       targeting = null;
     }
 
     const wordCount = coverLetter.split(/\s+/).filter(Boolean).length;
 
-    res.json({ cover_letter: coverLetter, targeting, word_count: wordCount });
+    res.json({ cover_letter: coverLetter, fit_warning: fitWarning, targeting, word_count: wordCount });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message || "Failed to generate cover letter." });
