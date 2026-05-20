@@ -651,19 +651,7 @@
           </div>
         </div>
 
-        <!-- Tone -->
-        <div class="card">
-          <h2>Tone</h2>
-          <div class="tone-group" id="tone-group">
-            <div class="tone-pill selected" data-tone="startup">Startup</div>
-            <div class="tone-pill" data-tone="formal">Formal</div>
-            <div class="tone-pill" data-tone="product-focused">Product-focused</div>
-            <div class="tone-pill" data-tone="technical">Technical</div>
-          </div>
-          <input type="hidden" name="tone" id="tone-input" value="startup" />
-        </div>
-
-        <button type="submit" class="btn-generate" id="generate-btn">Generate Cover Letter</button>
+<button type="submit" class="btn-generate" id="generate-btn">Generate Cover Letter</button>
       </form>
 
       <div class="loading" id="loading">
@@ -685,7 +673,7 @@
         <div class="cover-letter-text" id="cover-letter-text"></div>
         <div class="word-count">Words: <span id="word-count">0</span> / 300</div>
         <div class="targeting-box" id="targeting-box" style="display:none">
-          <div class="targeting-label">Why this letter works</div>
+          <div class="targeting-label">Tone & targeting rationale</div>
           <div class="targeting-text" id="targeting-text"></div>
         </div>
         <div class="save-prompt" id="save-prompt" style="display:none">
@@ -1027,15 +1015,6 @@
       fileNameEl.textContent = file.name;
       fileNameEl.style.display = "inline-block";
     }
-
-    // ── Tone pills ──
-    document.querySelectorAll(".tone-pill").forEach(pill => {
-      pill.addEventListener("click", () => {
-        document.querySelectorAll(".tone-pill").forEach(p => p.classList.remove("selected"));
-        pill.classList.add("selected");
-        document.getElementById("tone-input").value = pill.dataset.tone;
-      });
-    });
 
     // ── Generate ──
     const form = document.getElementById("form");

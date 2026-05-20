@@ -13,7 +13,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.post("/generate", upload.single("resume_pdf"), async (req, res) => {
   try {
-    const { resume_text, job_description, company, role, tone } = req.body;
+    const { resume_text, job_description, company, role } = req.body;
 
     let resumeContent = resume_text?.trim() || "";
 
@@ -34,38 +34,38 @@ app.post("/generate", upload.single("resume_pdf"), async (req, res) => {
       return res.status(400).json({ error: "Company name and role title are required." });
     }
 
-    const toneInstructions = {
-      startup: "Write in a direct, confident tone suited for a fast-moving startup. No corporate filler.",
-      formal: "Write in a formal, precise tone appropriate for traditional or regulated industries.",
-      "product-focused": "Write with a product-thinking lens — emphasize user impact, prioritization, and cross-functional decisions.",
-      technical: "Write with technical specificity — name tools, systems, and decisions rather than describing them vaguely.",
-    };
-
-    const toneGuide = toneInstructions[tone] || toneInstructions["startup"];
-
     const systemPrompt = `You are helping write a tailored cover letter. Follow this exact process:
 
-STEP 1 — Analyze: Extract the top 5 requirements from the job description.
-STEP 2 — Select: Choose only the 2–3 experiences from the resume that best match those requirements. Ignore the rest.
-STEP 3 — Write: Produce a cover letter under 300 words following the rules below.
-STEP 4 — Revise: Remove any sentence that could apply to any applicant. If a claim has no concrete evidence behind it, cut it or replace it with one that does.
+STEP 1 — Research the company: Using the company name and job description, infer:
+- What the product does, who the customers are, and what problem it solves
+- The specific workflow, pain point, or industry context this role operates in
+- Company stage and culture (early startup, growth, enterprise, agency, regulated industry, etc.)
+- The right tone: e.g. direct and technical for dev tools, conversational for consumer products, formal for finance or legal, crisp and metrics-driven for growth roles. Choose based on signals in the JD — do not default to a generic professional tone.
+
+STEP 2 — Extract requirements: Identify the top 5 requirements from the job description.
+
+STEP 3 — Match to context: Select only the 2–3 experiences from the resume that best match both the requirements AND the company's specific product context. Ignore the rest.
+
+STEP 4 — Write: Produce a cover letter under 300 words.
+
+STEP 5 — Revise: Remove any sentence that could apply to any applicant or any company. If a claim has no concrete evidence, cut it.
 
 WRITING RULES:
-- ${toneGuide}
-- Do not sound AI-generated or overly polished.
-- Organize around 2–3 fit themes for this role, not a project-by-project summary.
+- Use the tone you inferred in Step 1. Do not write in a generic professional tone.
+- Do not just match experiences to job requirements. Rewrite so the candidate's experiences sound directly relevant to this company's specific product, customer type, and workflow — without inventing skills or results they don't have.
 - For every major claim, include one concrete detail: a specific action, project name, metric, tool, or stakeholder context from the resume.
-- Do not write broad statements without evidence. Bad: "I thrive in ambiguous environments." Good: "At [X], I had to define the product scope from scratch before we had a PM — I wrote the spec, ran user interviews, and shipped v1 in six weeks."
-- Avoid these words and phrases unless tied to a concrete example: AI-native, workflow design, rapid prototyping, ambiguous environments, end-to-end, operating in ambiguity, cross-functional, stakeholder alignment, passionate, excited to apply, perfect fit. Use each idea at most once.
-- Mention the company and role by name, but do not flatter them excessively.
+- Use concrete language: building, deploying, iterating with users, handling messy data, translating ambiguous user needs into working features. Never write "I am passionate about X" or "I am excited about Y."
+- Avoid these phrases entirely: passionate, excited to apply, perfect fit, AI-native, workflow design, rapid prototyping, end-to-end, cross-functional, stakeholder alignment, operating in ambiguity.
+- Organize around 2–3 fit themes, not a project-by-project summary.
 - Do not invent experience, metrics, tools, or company details.
+- Mention the company and role by name. Do not flatter them.
 - No subject line or email header. Start with "Dear Hiring Manager," or a role-specific salutation.
-- End with a short, direct closing — one sentence.
+- End with one short, direct closing sentence.
 
 OUTPUT FORMAT — respond with raw valid JSON only. No markdown, no code fences, no explanation outside the JSON object:
 {
   "cover_letter": "the full cover letter text",
-  "targeting": "2–3 sentences explaining which job requirements you targeted and which resume experiences you chose, and why"
+  "targeting": "2–3 sentences: what tone you chose and why, which requirements you targeted, and which resume experiences you selected"
 }`;
 
     const userPrompt = `Resume:
