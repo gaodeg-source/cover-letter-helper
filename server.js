@@ -43,6 +43,7 @@ Using the company name and job description, identify:
 - The domain's constraints: is it high-stakes, compliance-heavy, latency-sensitive, messy-data-driven, or safety-critical? What breaks when things go wrong?
 - The specific AI primitives mentioned (agents, RAG, fine-tuning, evals, vector DBs, orchestration) and the exact tech stack (frameworks, languages, tools, cloud)
 - Company stage and culture, and the appropriate tone — direct and blunt for startups, formal for regulated industries, technical for engineering roles. Do not default to generic professional.
+- Whether the company is in education/edtech or not. This affects how to frame the candidate's experience in Step 3.
 
 STEP 2 — Fit check before writing:
 Honestly assess the resume against the role on three dimensions:
@@ -53,14 +54,28 @@ Honestly assess the resume against the role on three dimensions:
 If there are hard gaps — required skills completely absent, wrong degree field, missing years of experience — note them. Do not paper over them. The letter should be honest about what the candidate can and cannot offer.
 
 STEP 3 — Select and map experiences:
-Choose only the 2–3 experiences from the resume that genuinely connect to this role.
-- The connection must be direct — one logical step, not two. "Built AI tutoring workflows" connects to "build AI features for customer workflows." "Sold consumer products" does not connect to "opto-electronic manufacturing" or "CAD prototyping."
-- For each selected experience, surface only the tools or methods that map to the company's stated stack. Do not list everything the candidate knows.
-- Non-engineering experiences (sales, operations, brand-building) get at most one sentence, focused on the single most transferable angle only.
+First, count how many experiences in the resume are technically relevant to this role.
+- If one experience is significantly stronger than all others, build the letter around that one. Do not force 2–3 experiences if only one genuinely fits.
+- Use 2–3 experiences only when multiple are directly relevant.
+- Non-engineering experiences (sales, operations, brand-building) should only be included if the resume has fewer than 2 relevant technical experiences. If included, limit to one sentence on the single most transferable angle.
+- The connection must be direct — one logical step, not two. "Built AI pipelines that adapt to user state" connects to "build AI features for customer workflows." "Sold consumer products" does not connect to "opto-electronic manufacturing."
+- For each selected experience, surface only the tools or methods that map to the company's stated stack.
 
-STEP 4 — Write a cover letter under 320 words, organized around 2–3 fit themes.
+If the company is NOT in education or edtech: translate educational experience into engineering patterns. Do not use educational jargon. Reframe as follows:
+- "built LLM components for adaptive tutoring" → "built LLM pipelines that generate contextual responses based on user state"
+- "rubric-based feedback" → "structured output evaluation against defined criteria"
+- "learning objectives" → "task requirements" or "defined success criteria"
+- "student responses" → "user inputs" or "user behavior"
+The underlying engineering is what matters, not the educational context.
 
-STEP 5 — Revise: cut any sentence that could apply to any applicant at any company. Remove or replace any claim without concrete evidence.
+STEP 4 — Write a cover letter under 350 words.
+- Open by naming the company's specific problem or workflow and the candidate's clearest connection to it — in 1–2 sentences. Do not open with "I am writing to apply" or "I have X years of experience."
+- Organize around fit themes, not a project-by-project list.
+
+STEP 5 — Revise:
+- Cut any sentence that could apply to any applicant at any company.
+- Remove or replace any claim without concrete evidence from the resume.
+- Remove any language echoed from the JD's own marketing copy (e.g. if the JD says "Trailblazers" or "agentic era" or "limitless," do not use those words).
 
 WRITING RULES:
 - Write in the tone chosen in Step 1.
@@ -68,10 +83,11 @@ WRITING RULES:
 - When the role involves AI agents, orchestration, or multi-step pipelines, address it directly — do not reduce it to "LLM integration."
 - When the domain is high-stakes (finance, healthcare, legal, manufacturing), address reliability, edge cases, or failure modes — not just feature shipping.
 - For every major claim, include one concrete detail: project name, action taken, tool used, measurable result, or stakeholder context.
-- Mirror the company's stack only where the resume genuinely supports it. Do not claim or imply fluency in tools not present in the resume. If there is a partial match (e.g. candidate knows Python, role primarily uses Java), state what the candidate has and acknowledge the difference.
+- Mirror the company's stack only where the resume genuinely supports it. Do not claim or imply fluency in tools not present in the resume. If there is a partial match (e.g. candidate knows Python, role primarily uses Java), state what the candidate has and acknowledge the gap.
 - Use confident but not presumptuous language. Do not tell the company how their own product or process works.
 - Use concrete language: building, deploying, debugging, iterating with users, handling messy data, translating user needs into working features.
 - Never write: "I am passionate about X", "excited to apply", "perfect fit", "AI-native", "end-to-end", "cross-functional", "stakeholder alignment", "operating in ambiguity", "rapid prototyping", "thrive in fast-paced environments."
+- Do not mirror the company's marketing language or buzzwords from the JD.
 - Mention the company and role by name. Do not flatter them.
 - No subject line or email header. Start with "Dear Hiring Manager," or a role-specific salutation.
 - End with one short, direct closing sentence.
@@ -80,7 +96,7 @@ OUTPUT FORMAT — respond with raw valid JSON only. No markdown, no code fences,
 {
   "cover_letter": "the full cover letter text",
   "fit_warning": "If there are significant gaps — required skills completely absent, wrong degree field, insufficient years of experience, or domain experience that does not transfer — write 1–2 direct sentences naming the specific gaps. Be concrete: name the missing skill or requirement, not a vague disclaimer. If the fit is genuinely strong with no hard gaps, set this to null.",
-  "targeting": "3 sentences: (1) tone chosen and why, (2) fit assessment — what genuinely matches and any significant gaps, (3) which experiences were selected and how their stack maps to the role"
+  "targeting": "3 sentences: (1) tone chosen and why, (2) fit assessment — what genuinely matches and any significant gaps, (3) which experiences were selected, how their stack maps to the role, and whether edtech jargon was translated"
 }`;
 
     const userPrompt = `Resume:
@@ -94,7 +110,7 @@ Role: ${role.trim()}`;
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 1500,
+      max_tokens: 1800,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
