@@ -495,6 +495,24 @@
       margin-top: 0.4rem;
     }
 
+    .profile-drop-zone {
+      border: 2px dashed #ddd;
+      border-radius: 10px;
+      padding: 1.75rem;
+      text-align: center;
+      cursor: pointer;
+      background: #fafafa;
+      transition: all 0.15s;
+    }
+
+    .profile-drop-zone:hover, .profile-drop-zone.dragover { border-color: #1a1a1a; background: #f0efec; }
+    .profile-drop-zone input[type="file"] { display: none; }
+    .profile-drop-icon { font-size: 1.75rem; margin-bottom: 0.4rem; }
+    .profile-drop-text { font-size: 0.875rem; color: #666; }
+    .profile-drop-text span { color: #1a1a1a; font-weight: 600; text-decoration: underline; cursor: pointer; }
+    .profile-drop-filename { margin-top: 0.5rem; font-size: 0.8rem; color: #333; background: #eee; display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; }
+    .profile-drop-extracting { font-size: 0.82rem; color: #888; margin-top: 0.75rem; }
+
     /* ── Stats row ── */
     .stats-row {
       display: grid;
@@ -734,8 +752,30 @@
           <input type="text" id="profile-linkedin" placeholder="e.g. linkedin.com/in/alexjohnson" />
         </div>
         <div class="field">
-          <label for="profile-resume">Resume</label>
-          <textarea id="profile-resume" rows="14" placeholder="Paste your full resume here. It will auto-fill on the Generate tab."></textarea>
+          <label>Resume</label>
+          <div class="profile-drop-zone" id="profile-drop-zone">
+            <input type="file" id="profile-pdf-input" accept=".pdf" />
+            <div class="profile-drop-icon">📄</div>
+            <p class="profile-drop-text">Drop your resume PDF here or <span id="profile-browse-btn">browse</span></p>
+            <div class="profile-drop-filename" id="profile-drop-filename"></div>
+            <div class="profile-drop-extracting" id="profile-drop-extracting" style="display:none">
+              <div class="spinner" style="width:14px;height:14px;margin:0 auto 0.4rem"></div>
+              Extracting text…
+            </div>
+          </div>
+          <div id="profile-resume-preview" style="display:none; margin-top:0.75rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem">
+              <span style="font-size:0.78rem;color:#888">Extracted text — edit if needed</span>
+              <button type="button" class="btn-link" id="profile-resume-clear">Replace file</button>
+            </div>
+            <textarea id="profile-resume" rows="12" placeholder="Resume text will appear here after upload."></textarea>
+          </div>
+          <div id="profile-resume-text-only" style="display:none; margin-top:0.75rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem">
+              <span style="font-size:0.78rem;color:#888">Saved resume — edit if needed</span>
+            </div>
+            <textarea id="profile-resume-edit" rows="12"></textarea>
+          </div>
           <div class="profile-resume-hint">Saved locally in your browser. Never leaves your device.</div>
         </div>
         <div class="profile-save-row">
@@ -813,13 +853,49 @@
     });
 
     // ── Profile page ──
+    function getProfileResumeText() {
+      // Read from whichever resume field is currently visible
+      const preview = document.getElementById("profile-resume-preview");
+      const textOnly = document.getElementById("profile-resume-text-only");
+      if (preview.style.display !== "none") return document.getElementById("profile-resume").value.trim();
+      if (textOnly.style.display !== "none") return document.getElementById("profile-resume-edit").value.trim();
+      return "";
+    }
+
+    function showResumePreview(text) {
+      document.getElementById("profile-drop-zone").style.display = "none";
+      document.getElementById("profile-resume-text-only").style.display = "none";
+      document.getElementById("profile-resume").value = text;
+      document.getElementById("profile-resume-preview").style.display = "block";
+    }
+
+    function showResumeSaved(text) {
+      document.getElementById("profile-drop-zone").style.display = "none";
+      document.getElementById("profile-resume-preview").style.display = "none";
+      document.getElementById("profile-resume-edit").value = text;
+      document.getElementById("profile-resume-text-only").style.display = "block";
+    }
+
+    function resetResumeDropZone() {
+      document.getElementById("profile-resume-preview").style.display = "none";
+      document.getElementById("profile-resume-text-only").style.display = "none";
+      document.getElementById("profile-drop-zone").style.display = "block";
+      document.getElementById("profile-drop-filename").textContent = "";
+      document.getElementById("profile-drop-extracting").style.display = "none";
+    }
+
     function initProfilePage() {
       const p = loadProfile();
       document.getElementById("profile-name").value     = p.name     || "";
       document.getElementById("profile-email").value    = p.email    || "";
       document.getElementById("profile-linkedin").value = p.linkedin || "";
-      document.getElementById("profile-resume").value   = p.resume   || "";
       updateAvatar(p.name);
+
+      if (p.resume) {
+        showResumeSaved(p.resume);
+      } else {
+        resetResumeDropZone();
+      }
     }
 
     function updateAvatar(name) {
@@ -829,18 +905,58 @@
 
     document.getElementById("profile-name").addEventListener("input", e => updateAvatar(e.target.value));
 
+    // PDF drop zone
+    const profileDropZone = document.getElementById("profile-drop-zone");
+    const profilePdfInput = document.getElementById("profile-pdf-input");
+
+    document.getElementById("profile-browse-btn").addEventListener("click", () => profilePdfInput.click());
+    profileDropZone.addEventListener("click", () => profilePdfInput.click());
+    profileDropZone.addEventListener("dragover", e => { e.preventDefault(); profileDropZone.classList.add("dragover"); });
+    profileDropZone.addEventListener("dragleave", () => profileDropZone.classList.remove("dragover"));
+    profileDropZone.addEventListener("drop", e => {
+      e.preventDefault();
+      profileDropZone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file?.type === "application/pdf") extractProfilePdf(file);
+    });
+
+    profilePdfInput.addEventListener("change", () => {
+      if (profilePdfInput.files[0]) extractProfilePdf(profilePdfInput.files[0]);
+    });
+
+    async function extractProfilePdf(file) {
+      document.getElementById("profile-drop-filename").textContent = file.name;
+      document.getElementById("profile-drop-extracting").style.display = "block";
+
+      const fd = new FormData();
+      fd.append("resume_pdf", file);
+
+      try {
+        const res = await fetch("/extract-pdf", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Extraction failed");
+        showResumePreview(data.text);
+      } catch (err) {
+        document.getElementById("profile-drop-extracting").style.display = "none";
+        alert("Could not extract PDF text: " + err.message);
+      }
+    }
+
+    document.getElementById("profile-resume-clear").addEventListener("click", resetResumeDropZone);
+
     document.getElementById("profile-save-btn").addEventListener("click", () => {
       const p = {
         name:     document.getElementById("profile-name").value.trim(),
         email:    document.getElementById("profile-email").value.trim(),
         linkedin: document.getElementById("profile-linkedin").value.trim(),
-        resume:   document.getElementById("profile-resume").value.trim(),
+        resume:   getProfileResumeText(),
       };
       saveProfile(p);
       saveResume(p.resume);
 
-      // Sync to Generate tab textarea
+      // Show saved state for resume section
       if (p.resume) {
+        showResumeSaved(p.resume);
         resumeTextarea.value = p.resume;
         document.getElementById("resume-saved-badge").style.display = "inline-flex";
       }

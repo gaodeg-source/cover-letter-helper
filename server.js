@@ -104,6 +104,18 @@ Role: ${role.trim()}`;
   }
 });
 
+app.post("/extract-pdf", upload.single("resume_pdf"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No PDF file provided." });
+    const pdf = require("pdf-parse/lib/pdf-parse");
+    const pdfData = await pdf(req.file.buffer);
+    res.json({ text: pdfData.text.trim() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to extract PDF text." });
+  }
+});
+
 // Local dev only — Vercel handles listening itself
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3001;
